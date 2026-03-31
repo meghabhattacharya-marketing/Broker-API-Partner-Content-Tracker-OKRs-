@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Partner Content OKR Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0f1117;
+    --surface: #1a1d27;
+    --border: #2a2d3a;
+    --text: #e4e4e7;
+    --muted: #71717a;
+    --accent: #6366f1;
+    --accent-light: #818cf8;
+    --green: #22c55e;
+    --green-bg: rgba(34,197,94,.12);
+    --amber: #f59e0b;
+    --amber-bg: rgba(245,158,11,.12);
+    --red: #ef4444;
+    --cyan: #06b6d4;
+    --pink: #ec4899;
+    --lime: #84cc16;
+    --orange: #f97316;
+    --teal: #14b8a6;
+    --rose: #f43f5e;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    padding: 2rem;
+    min-height: 100vh;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .header h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  .header .subtitle { color: var(--muted); font-size: .875rem; margin-top: .25rem; }
+  .header .date { color: var(--muted); font-size: .75rem; margin-top: .25rem; }
+
+
+  .header-actions { display: flex; align-items: center; gap: .75rem; }
+
+  .btn-export {
+    display: inline-flex;
+    align-items: center;
+    gap: .5rem;
+    padding: .5rem 1rem;
+    border-radius: .5rem;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text);
+    font-size: .8rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all .2s;
+  }
+  .btn-export:hover { border-color: var(--accent); color: var(--accent-light); }
+  .btn-export:active { transform: scale(.97); }
+  .btn-export svg { width: 16px; height: 16px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .375rem;
+    padding: .375rem .75rem;
+    border-radius: 9999px;
+    font-size: .75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+  }
+  .badge-on-track { background: var(--green-bg); color: var(--green); }
+  .badge-at-risk  { background: var(--amber-bg); color: var(--amber); }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .kpi-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: 1.25rem;
+  }
+  .kpi-card .label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem; }
+  .kpi-card .value { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .kpi-card .detail { font-size: .8rem; color: var(--muted); margin-top: .375rem; }
+  .value.green  { color: var(--green); }
+  .value.amber  { color: var(--amber); }
+  .value.accent { color: var(--accent-light); }
+
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media (max-width: 860px) { .chart-grid { grid-template-columns: 1fr; } }
+
+  .chart-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: 1.5rem;
+  }
+  .chart-card h2 { font-size: .9rem; font-weight: 600; margin-bottom: 1rem; }
+  .chart-wrapper { position: relative; height: 260px; }
+
+  .stories-table, .quarterly-table, .upcoming-table {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    overflow: hidden;
+    margin-bottom: 2rem;
+  }
+  .stories-table h2, .quarterly-table h2, .upcoming-table h2 {
+    font-size: .9rem;
+    font-weight: 600;
+    padding: 1.25rem 1.5rem .75rem;
+  }
+
+  table { width: 100%; border-collapse: collapse; }
+  th {
+    text-align: left;
+    font-size: .7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: .625rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  td {
+    padding: .75rem 1.25rem;
+    font-size: .825rem;
+    border-bottom: 1px solid var(--border);
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .bar-cell { display: flex; align-items: center; gap: .75rem; }
+  .mini-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 4px; transition: width 1s cubic-bezier(.22,1,.36,1); }
+  .bar-pct { font-size: .75rem; color: var(--muted); min-width: 2.5rem; text-align: right; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .5rem; }
+  .q-label { font-weight: 600; }
+
+  .region-tag {
+    display: inline-flex;
+    align-items: center;
+    padding: .25rem .625rem;
+    border-radius: .375rem;
+    font-size: .72rem;
+    font-weight: 500;
+    white-space: nowrap;
+  }
+  .region-EMEA   { background: rgba(99,102,241,.12); color: var(--accent-light); }
+  .region-NA     { background: rgba(34,197,94,.12); color: var(--green); }
+  .region-LATAM  { background: rgba(245,158,11,.12); color: var(--amber); }
+  .region-APAC   { background: rgba(6,182,212,.12); color: var(--cyan); }
+  .region-NZAus  { background: rgba(236,72,153,.12); color: var(--pink); }
+  .region-Africa { background: rgba(249,115,22,.12); color: var(--orange); }
+
+  .type-tag {
+    display: inline-flex;
+    padding: .2rem .5rem;
+    border-radius: .25rem;
+    font-size: .7rem;
+    font-weight: 500;
+    background: rgba(255,255,255,.06);
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .asset-tags { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .asset-tag {
+    display: inline-flex;
+    padding: .15rem .45rem;
+    border-radius: .25rem;
+    font-size: .65rem;
+    font-weight: 500;
+    background: rgba(20,184,166,.1);
+    color: var(--teal);
+    white-space: nowrap;
+  }
+
+  .status-tag-drafted {
+    display: inline-flex;
+    padding: .2rem .5rem;
+    border-radius: .25rem;
+    font-size: .7rem;
+    font-weight: 500;
+    background: var(--amber-bg);
+    color: var(--amber);
+  }
+  .status-tag-review {
+    display: inline-flex;
+    padding: .2rem .5rem;
+    border-radius: .25rem;
+    font-size: .7rem;
+    font-weight: 500;
+    background: rgba(6,182,212,.12);
+    color: var(--cyan);
+  }
+
+  .notes-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: .75rem;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+  }
+  .notes-card h2 { font-size: .9rem; font-weight: 600; margin-bottom: 1rem; }
+
+  .forecast-line { font-size: .8rem; color: var(--muted); line-height: 1.7; }
+  .highlight { color: var(--green); font-weight: 600; }
+  .highlight-amber { color: var(--amber); font-weight: 600; }
+
+  .month-label { font-size: .7rem; color: var(--muted); white-space: nowrap; }
+  .partner-name { font-weight: 500; white-space: nowrap; }
+  .country-label { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+
+  .blog-link {
+    color: var(--accent-light);
+    text-decoration: none;
+    font-weight: 500;
+    transition: color .15s;
+  }
+  .blog-link:hover { color: #a5b4fc; text-decoration: underline; }
+  .blog-link svg {
+    width: 12px; height: 12px;
+    vertical-align: -1px;
+    margin-left: 3px;
+    opacity: 0;
+    transition: opacity .15s;
+  }
+  .blog-link:hover svg { opacity: 1; }
+</style>
+</head>
+<body>
+
+<div id="dashboard">
+
+<div class="header">
+  <div>
+    <h1>2026 Partner Content OKR Tracker</h1>
+    <div class="subtitle">Publish 52 Broker API Customer Stories, PRs, Blogs & Partner Content</div>
+    <div class="date">Last updated: March 31, 2026 &middot; End of Q1</div>
+  </div>
+  <div class="header-actions">
+    <span class="badge badge-at-risk">At Risk &middot; 92% of Q1 target</span>
+    <button class="btn-export" onclick="exportPDF()">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+      Export PDF
+    </button>
+  </div>
+</div>
+
+<div class="kpi-grid">
+  <div class="kpi-card animate-in">
+    <div class="label">Published / Live</div>
+    <div class="value green" data-count="12">0</div>
+    <div class="detail">of 52 target</div>
+  </div>
+  <div class="kpi-card animate-in">
+    <div class="label">In Pipeline</div>
+    <div class="value amber" data-count="6">0</div>
+    <div class="detail">3 in review + 3 blocked</div>
+  </div>
+  <div class="kpi-card animate-in">
+    <div class="label">Remaining</div>
+    <div class="value" data-count="34">0</div>
+    <div class="detail">stories to publish</div>
+  </div>
+  <div class="kpi-card animate-in">
+    <div class="label">Overall Progress</div>
+    <div class="value accent" data-count="23" data-suffix="%">0%</div>
+    <div class="detail">25% expected at Q1 end</div>
+  </div>
+  <div class="kpi-card animate-in">
+    <div class="label">Regions Covered</div>
+    <div class="value accent" data-count="6">0</div>
+    <div class="detail">global regions</div>
+  </div>
+  <div class="kpi-card animate-in">
+    <div class="label">Run Rate Needed</div>
+    <div class="value" data-count="4.4" data-decimal="1">0</div>
+    <div class="detail">stories/month (Apr–Dec)</div>
+  </div>
+</div>
+
+<!-- Charts row 1 -->
+<div class="chart-grid">
+  <div class="chart-card animate-in">
+    <h2>Quarterly Target vs. Actual</h2>
+    <div class="chart-wrapper"><canvas id="barChart"></canvas></div>
+  </div>
+  <div class="chart-card animate-in">
+    <h2>Annual Progress</h2>
+    <div class="chart-wrapper"><canvas id="doughnutChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Charts row 2 -->
+<div class="chart-grid" style="margin-bottom:2rem">
+  <div class="chart-card animate-in">
+    <h2>Cumulative Pace — Target vs. Actual</h2>
+    <div class="chart-wrapper"><canvas id="paceChart"></canvas></div>
+  </div>
+  <div class="chart-card animate-in">
+    <h2>Stories by Region</h2>
+    <div class="chart-wrapper"><canvas id="regionChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Charts row 3 -->
+<div class="chart-grid" style="margin-bottom:2rem">
+  <div class="chart-card animate-in">
+    <h2>Asset Classes Across Published Stories</h2>
+    <div class="chart-wrapper"><canvas id="assetBarChart"></canvas></div>
+  </div>
+  <div class="chart-card animate-in">
+    <h2>Asset Class Mix (incl. Upcoming)</h2>
+    <div class="chart-wrapper"><canvas id="assetRadarChart"></canvas></div>
+  </div>
+</div>
+
+<!-- Published stories table -->
+<div class="stories-table">
+  <h2>Q1 Published Stories (12)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Partner</th>
+        <th>Type</th>
+        <th>Asset Classes</th>
+        <th>Region</th>
+        <th>Country</th>
+        <th>Published</th>
+      </tr>
+    </thead>
+    <tbody id="storiesBody"></tbody>
+  </table>
+</div>
+
+<!-- Upcoming / Drafted stories table -->
+<div class="upcoming-table">
+  <h2>Q1 Pipeline — Drafted & In Review (6)</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Partner</th>
+        <th>Type</th>
+        <th>Asset Classes</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody id="upcomingBody"></tbody>
+  </table>
+</div>
+
+<!-- Quarterly breakdown -->
+<div class="quarterly-table">
+  <h2>Quarterly Breakdown</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>Quarter</th>
+        <th>Status</th>
+        <th>Live</th>
+        <th>Drafted</th>
+        <th>Target</th>
+        <th style="width:35%">Progress</th>
+      </tr>
+    </thead>
+    <tbody id="tableBody"></tbody>
+  </table>
+</div>
+
+<!-- Forecast -->
+<div class="notes-card">
+  <h2>Forecast & Key Takeaways</h2>
+  <div class="forecast-line">
+    Q1 closed with <span class="highlight">12 stories live</span> against a target of 13 — just 1 short, with
+    <span class="highlight">6 more in the pipeline</span> (3 in review, 3 blocked by partner go-live).<br><br>
+    If all 6 pipeline stories convert, you reach <span class="highlight">18 total</span> (35%).
+    From there, you need <span class="highlight-amber">~3.8 stories/month</span> (Apr–Dec) to hit 52 —
+    just under <span class="highlight-amber">1 per week</span>.<br><br>
+    Regional coverage is strong: <span class="highlight">6 regions</span> represented in Q1 alone — EMEA leads with 4 stories,
+    followed by NA (3), LATAM (2), and single entries from APAC, NZ/Aus, and Africa.<br><br>
+    Most common asset class: <span class="highlight">US Stocks & ETFs</span> (featured in all 12 published stories).
+    <span class="highlight">High Yield Cash</span> appears in 4 stories. The pipeline introduces
+    <span class="highlight">Tokenization</span> and <span class="highlight">Crypto</span> — signaling product diversification beyond equities.
+  </div>
+</div>
+
+<div style="margin-top:1.5rem;padding-top:1rem;border-top:1px solid var(--border);text-align:center;color:var(--muted);font-size:.7rem;letter-spacing:.03em;">Confidential &middot; Internal Use Only</div>
+
+</div><!-- end #dashboard -->
+
+<script>
+const ACCENT    = '#6366f1';
+const ACCENT_40 = 'rgba(99,102,241,.4)';
+const GREEN     = '#22c55e';
+const GREEN_40  = 'rgba(34,197,94,.35)';
+const AMBER     = '#f59e0b';
+const AMBER_40  = 'rgba(245,158,11,.35)';
+const CYAN      = '#06b6d4';
+const PINK      = '#ec4899';
+const ORANGE    = '#f97316';
+const TEAL      = '#14b8a6';
+const MUTED     = '#71717a';
+const BORDER    = '#2a2d3a';
+
+Chart.defaults.color = MUTED;
+Chart.defaults.borderColor = BORDER;
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif";
+
+const extLinkSvg = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-4.5-6H18m0 0v4.5m0-4.5l-7.5 7.5"/></svg>';
+
+const stories = [
+  { n: 1,  partner: 'TF Capital',       type: 'Customer Story', assets: ['US Stocks & ETFs', 'High Yield Cash'],               region: 'EMEA',   country: 'Montenegro',    date: '2026-01-08', url: 'https://alpaca.markets/blog/how-tf-capital-brought-mobile-investing-in-us-markets-to-the-adriatic-region/' },
+  { n: 2,  partner: 'Pearler',           type: 'Customer Story', assets: ['US Stocks & ETFs'],                                  region: 'NZ/Aus', country: 'Australia',     date: '2026-01-20', url: 'https://alpaca.markets/blog/how-pearler-is-building-the-investing-platform-for-the-next-generation-of-australians/' },
+  { n: 3,  partner: 'Valbury (OmniSub)', type: 'PR',             assets: ['US Stocks & ETFs', 'OmniSub'],                       region: 'APAC',   country: 'Indonesia',     date: '2026-01-21', url: 'https://alpaca.markets/blog/pt-valbury-asia-futures-launches-us-stock-trading-with-alpaca/' },
+  { n: 4,  partner: 'Waldo AI',          type: 'Launch Blog',    assets: ['US Stocks & ETFs'],                                  region: 'NA',     country: 'United States', date: '2026-02-09', url: 'https://alpaca.markets/blog/waldo-launches-modern-treasury-platform/' },
+  { n: 5,  partner: 'Bitso',             type: 'Customer Story', assets: ['US Stocks & ETFs'],                                  region: 'LATAM',  country: 'Mexico',        date: '2026-02-19', url: 'https://alpaca.markets/blog/how-bitso-is-empowering-investors-in-mexico-with-commission-free-trading/' },
+  { n: 6,  partner: 'Musaffa',           type: 'PR',             assets: ['US Stocks & ETFs'],                                  region: 'NA',     country: 'United States', date: '2026-02-26', url: 'https://alpaca.markets/blog/musaffa-expands-faith-aligned-investing/' },
+  { n: 7,  partner: 'Trii',              type: 'PR',             assets: ['US Stocks & ETFs'],                                  region: 'LATAM',  country: 'Chile',         date: '2026-03-10', url: 'https://alpaca.markets/blog/trii-launches-us-stock-trading-in-chile/' },
+  { n: 8,  partner: 'Midas',             type: 'Customer Story', assets: ['High Yield Cash', 'US Options', '24/5 Trading'],     region: 'EMEA',   country: 'Turkey',        date: '2026-03-17', url: 'https://alpaca.markets/blog/how-midas-is-leveling-the-playing-field-for-turkish-investors/' },
+  { n: 9,  partner: 'Vesto',             type: 'Customer Story', assets: ['US Stocks & ETFs', 'Fixed Income', 'High Yield Cash'], region: 'EMEA', country: 'Spain',         date: '2026-03-19', url: 'https://alpaca.markets/blog/how-vesto-is-expanding-financial-access-in-spain-and-andorra/' },
+  { n: 10, partner: 'Wallace',           type: 'Launch Blog',    assets: ['US Stocks & ETFs'],                                  region: 'NA',     country: 'United States', date: '2026-03-24', url: 'https://alpaca.markets/blog/wallace-finance-partners-with-alpaca/' },
+  { n: 11, partner: 'Artesia / CUSP',    type: 'Launch Blog',    assets: ['US Stocks & ETFs', 'High Yield Cash'],               region: 'EMEA',   country: 'GCC',           date: '2026-03-26', url: 'https://alpaca.markets/blog/cusp-wealth-launches-us-stocks-and-savings-accounts/' },
+  { n: 12, partner: 'Raenest',           type: 'Customer Story', assets: ['US Stocks & ETFs', 'High Yield Cash'],               region: 'Africa', country: 'Nigeria',       date: '2026-03-31', url: 'https://alpaca.markets/blog/how-raenest-is-empowering-nigerian-professionals-with-access-to-us-markets/' },
+];
+
+const upcoming = [
+  { partner: 'Ondo',          type: 'Customer Story', assets: ['Tokenization'],                        status: 'Internal Review' },
+  { partner: 'Pasha Capital', type: 'Customer Story', assets: ['US Stocks & ETFs'],                    status: 'External Review' },
+  { partner: 'Zesty',         type: 'PR',             assets: ['Crypto'],                              status: 'External Review' },
+  { partner: 'St0x',          type: 'PR',             assets: ['Tokenization', 'Crypto Wallets'],      status: 'Blocked by Partner' },
+  { partner: 'Anchored',      type: 'PR',             assets: ['Tokenization'],                        status: 'Blocked by Partner' },
+  { partner: 'Rudo',          type: 'Launch Blog',    assets: ['US Stocks & ETFs', 'High Yield Cash'], status: 'Blocked by Partner' },
+];
+
+const regionClass = r => r === 'NZ/Aus' ? 'NZAus' : r;
+const fmtDate = d => {
+  const dt = new Date(d + 'T00:00:00');
+  return dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+};
+const assetHtml = arr => arr.map(a => `<span class="asset-tag">${a}</span>`).join('');
+
+const storiesBody = document.getElementById('storiesBody');
+stories.forEach(s => {
+  storiesBody.innerHTML += `<tr>
+    <td style="color:var(--muted)">${s.n}</td>
+    <td><a class="blog-link" href="${s.url}" target="_blank" rel="noopener">${s.partner}${extLinkSvg}</a></td>
+    <td><span class="type-tag">${s.type}</span></td>
+    <td><div class="asset-tags">${assetHtml(s.assets)}</div></td>
+    <td><span class="region-tag region-${regionClass(s.region)}">${s.region}</span></td>
+    <td class="country-label">${s.country}</td>
+    <td class="month-label">${fmtDate(s.date)}</td>
+  </tr>`;
+});
+
+const upcomingBody = document.getElementById('upcomingBody');
+upcoming.forEach(u => {
+  const isBlocked = u.status === 'Blocked by Partner';
+  const tagClass = isBlocked ? 'status-tag-drafted' : 'status-tag-review';
+  upcomingBody.innerHTML += `<tr>
+    <td class="partner-name">${u.partner}</td>
+    <td><span class="type-tag">${u.type}</span></td>
+    <td><div class="asset-tags">${assetHtml(u.assets)}</div></td>
+    <td><span class="${tagClass}">${u.status}</span></td>
+  </tr>`;
+});
+
+const quarters = [
+  { label: 'Q1', target: 13, live: 12, drafted: 6, status: 'at-risk' },
+  { label: 'Q2', target: 13, live: 0,  drafted: 0, status: 'pending' },
+  { label: 'Q3', target: 13, live: 0,  drafted: 0, status: 'pending' },
+  { label: 'Q4', target: 13, live: 0,  drafted: 0, status: 'pending' },
+];
+
+// Build lookup maps for rich tooltips
+const partnersByRegion = {};
+stories.forEach(s => {
+  if (!partnersByRegion[s.region]) partnersByRegion[s.region] = [];
+  partnersByRegion[s.region].push(s.partner);
+});
+
+const partnersByAsset = {};
+stories.forEach(s => s.assets.forEach(a => {
+  if (!partnersByAsset[a]) partnersByAsset[a] = [];
+  partnersByAsset[a].push(s.partner);
+}));
+
+const richTooltip = {
+  backgroundColor: '#1a1d27',
+  borderColor: '#2a2d3a',
+  borderWidth: 1,
+  titleFont: { weight: '600', size: 13 },
+  bodyFont: { size: 12 },
+  padding: 12,
+  cornerRadius: 8,
+  displayColors: true,
+  boxPadding: 4,
+};
+
+// Quarterly bar chart
+new Chart(document.getElementById('barChart'), {
+  type: 'bar',
+  data: {
+    labels: quarters.map(q => q.label),
+    datasets: [
+      { label: 'Target', data: quarters.map(q => q.target), backgroundColor: ACCENT_40, borderColor: ACCENT, borderWidth: 1, borderRadius: 6 },
+      { label: 'Live',   data: quarters.map(q => q.live),   backgroundColor: GREEN_40,  borderColor: GREEN,  borderWidth: 1, borderRadius: 6 },
+      { label: 'Drafted',data: quarters.map(q => q.drafted), backgroundColor: AMBER_40, borderColor: AMBER,  borderWidth: 1, borderRadius: 6 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: {
+        ...richTooltip,
+        callbacks: {
+          afterBody(items) {
+            const q = quarters[items[0].dataIndex];
+            if (q.live === 0) return '';
+            const pct = Math.round(q.live / q.target * 100);
+            return `${pct}% of quarterly target`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: { beginAtZero: true, grid: { color: BORDER }, ticks: { stepSize: 5 } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Doughnut
+new Chart(document.getElementById('doughnutChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Published', 'Drafted', 'Remaining'],
+    datasets: [{ data: [12, 6, 34], backgroundColor: [GREEN, AMBER, BORDER], borderWidth: 0, spacing: 3, borderRadius: 4 }]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false, cutout: '72%',
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: {
+        ...richTooltip,
+        callbacks: {
+          label: ctx => ` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/52*100)}%)`,
+          afterLabel(ctx) {
+            if (ctx.dataIndex === 0) return 'Across 6 global regions';
+            if (ctx.dataIndex === 1) return '3 in review, 3 blocked by partner';
+            return `~4.4 stories/month needed`;
+          }
+        }
+      }
+    }
+  },
+  plugins: [{
+    id: 'centerText',
+    afterDraw(chart) {
+      const { ctx, chartArea: { width, height, top, left } } = chart;
+      const cx = left + width / 2, cy = top + height / 2 - 12;
+      ctx.save();
+      ctx.textAlign = 'center';
+      ctx.fillStyle = '#e4e4e7';
+      ctx.font = 'bold 2rem -apple-system, sans-serif';
+      ctx.fillText('23%', cx, cy + 8);
+      ctx.font = '0.75rem -apple-system, sans-serif';
+      ctx.fillStyle = MUTED;
+      ctx.fillText('12 of 52 stories', cx, cy + 28);
+      ctx.restore();
+    }
+  }]
+});
+
+// Cumulative pace
+const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const targetPace = months.map((_, i) => Math.round(52 / 12 * (i + 1) * 10) / 10);
+const actualPace = [3, 6, 12, null, null, null, null, null, null, null, null, null];
+const projectedPace = [null, null, 12, 18, 21.8, 25.6, 29.4, 33.2, 37.0, 40.8, 44.6, 52];
+
+new Chart(document.getElementById('paceChart'), {
+  type: 'line',
+  data: {
+    labels: months,
+    datasets: [
+      { label: 'Target Pace',  data: targetPace,    borderColor: ACCENT, borderDash: [6,4], borderWidth: 2, pointRadius: 0, tension: .3 },
+      { label: 'Actual',       data: actualPace,    borderColor: GREEN,  borderWidth: 2.5, pointRadius: 5, pointBackgroundColor: GREEN, tension: .3 },
+      { label: 'Projected (incl. drafted)', data: projectedPace, borderColor: AMBER, borderDash: [4,4], borderWidth: 2, pointRadius: 0, tension: .3 },
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: {
+        ...richTooltip,
+        callbacks: {
+          afterBody(items) {
+            const idx = items[0].dataIndex;
+            const target = targetPace[idx];
+            const actual = actualPace[idx];
+            if (actual === null) return '';
+            const diff = actual - target;
+            return diff >= 0 ? `+${diff.toFixed(1)} ahead of pace` : `${diff.toFixed(1)} behind pace`;
+          }
+        }
+      }
+    },
+    scales: {
+      y: { beginAtZero: true, max: 55, grid: { color: BORDER } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+// Region chart with partner names in tooltip
+const regionData = [
+  { region: 'EMEA',   count: 4, color: ACCENT },
+  { region: 'NA',     count: 3, color: GREEN },
+  { region: 'LATAM',  count: 2, color: AMBER },
+  { region: 'APAC',   count: 1, color: CYAN },
+  { region: 'NZ/Aus', count: 1, color: PINK },
+  { region: 'Africa', count: 1, color: ORANGE },
+];
+
+new Chart(document.getElementById('regionChart'), {
+  type: 'bar',
+  data: {
+    labels: regionData.map(r => r.region),
+    datasets: [{
+      data: regionData.map(r => r.count),
+      backgroundColor: regionData.map(r => r.color + '55'),
+      borderColor: regionData.map(r => r.color),
+      borderWidth: 1,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...richTooltip,
+        callbacks: {
+          label: ctx => ` ${ctx.raw} ${ctx.raw === 1 ? 'story' : 'stories'}`,
+          afterLabel(ctx) {
+            const region = regionData[ctx.dataIndex].region;
+            const partners = partnersByRegion[region];
+            if (!partners) return '';
+            return partners.join(', ');
+          }
+        }
+      }
+    },
+    scales: {
+      x: { beginAtZero: true, max: 6, grid: { color: BORDER }, ticks: { stepSize: 1 } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// Quarterly table
+const tbody = document.getElementById('tableBody');
+quarters.forEach(q => {
+  const pct = Math.round(q.live / q.target * 100);
+  const color = q.live === 0 ? MUTED : pct >= 90 ? GREEN : pct >= 50 ? AMBER : '#ef4444';
+  const statusLabel = q.status === 'at-risk' ? 'Near Target' : q.status === 'pending' ? 'Upcoming' : 'On Track';
+  const dotColor = q.status === 'at-risk' ? AMBER : q.status === 'pending' ? MUTED : GREEN;
+  tbody.innerHTML += `<tr>
+    <td class="q-label">${q.label} 2026</td>
+    <td><span class="status-dot" style="background:${dotColor}"></span>${statusLabel}</td>
+    <td>${q.live}</td>
+    <td>${q.drafted}</td>
+    <td>${q.target}</td>
+    <td><div class="bar-cell"><div class="mini-bar"><div class="mini-bar-fill" data-width="${pct}" style="width:0%; background:${color}"></div></div><span class="bar-pct">${pct}%</span></div></td>
+  </tr>`;
+});
+
+// Asset class bar chart with partner names in tooltip
+const assetCounts = {};
+stories.forEach(s => s.assets.forEach(a => { assetCounts[a] = (assetCounts[a] || 0) + 1; }));
+const assetLabels = Object.keys(assetCounts).sort((a, b) => assetCounts[b] - assetCounts[a]);
+const assetValues = assetLabels.map(a => assetCounts[a]);
+
+const assetColors = [GREEN, TEAL, AMBER, ACCENT, CYAN, PINK, ORANGE];
+
+new Chart(document.getElementById('assetBarChart'), {
+  type: 'bar',
+  data: {
+    labels: assetLabels,
+    datasets: [{
+      data: assetValues,
+      backgroundColor: assetLabels.map((_, i) => (assetColors[i % assetColors.length]) + '55'),
+      borderColor: assetLabels.map((_, i) => assetColors[i % assetColors.length]),
+      borderWidth: 1,
+      borderRadius: 6,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        ...richTooltip,
+        callbacks: {
+          label: ctx => ` ${ctx.raw} ${ctx.raw === 1 ? 'story' : 'stories'}`,
+          afterLabel(ctx) {
+            const asset = assetLabels[ctx.dataIndex];
+            const partners = partnersByAsset[asset];
+            if (!partners) return '';
+            return partners.join(', ');
+          }
+        }
+      }
+    },
+    scales: {
+      x: { beginAtZero: true, max: 14, grid: { color: BORDER }, ticks: { stepSize: 2 } },
+      y: { grid: { display: false } }
+    }
+  }
+});
+
+// Radar chart
+const allAssetCounts = {};
+stories.forEach(s => s.assets.forEach(a => { allAssetCounts[a] = (allAssetCounts[a] || 0) + 1; }));
+upcoming.forEach(u => u.assets.forEach(a => { allAssetCounts[a] = (allAssetCounts[a] || 0) + 1; }));
+const upcomingOnlyCounts = {};
+upcoming.forEach(u => u.assets.forEach(a => { upcomingOnlyCounts[a] = (upcomingOnlyCounts[a] || 0) + 1; }));
+const radarLabels = Object.keys(allAssetCounts).sort((a, b) => allAssetCounts[b] - allAssetCounts[a]);
+
+new Chart(document.getElementById('assetRadarChart'), {
+  type: 'radar',
+  data: {
+    labels: radarLabels,
+    datasets: [
+      {
+        label: 'Published (12)',
+        data: radarLabels.map(a => assetCounts[a] || 0),
+        backgroundColor: GREEN + '20',
+        borderColor: GREEN,
+        borderWidth: 2,
+        pointBackgroundColor: GREEN,
+        pointRadius: 4,
+      },
+      {
+        label: 'Upcoming (6)',
+        data: radarLabels.map(a => upcomingOnlyCounts[a] || 0),
+        backgroundColor: AMBER + '20',
+        borderColor: AMBER,
+        borderWidth: 2,
+        pointBackgroundColor: AMBER,
+        pointRadius: 4,
+      }
+    ]
+  },
+  options: {
+    responsive: true, maintainAspectRatio: false,
+    plugins: {
+      legend: { position: 'bottom', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: { ...richTooltip }
+    },
+    scales: {
+      r: {
+        beginAtZero: true,
+        grid: { color: BORDER },
+        angleLines: { color: BORDER },
+        pointLabels: { color: MUTED, font: { size: 10 } },
+        ticks: { display: false }
+      }
+    }
+  }
+});
+
+// Animated count-up for KPI values
+function animateCountUp() {
+  document.querySelectorAll('[data-count]').forEach(el => {
+    const target = parseFloat(el.dataset.count);
+    const suffix = el.dataset.suffix || '';
+    const decimals = parseInt(el.dataset.decimal || '0');
+    const duration = 1200;
+    const start = performance.now();
+
+    function tick(now) {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = eased * target;
+
+      if (decimals > 0) {
+        el.textContent = current.toFixed(decimals) + suffix;
+      } else {
+        el.textContent = Math.round(current) + suffix;
+      }
+
+      if (progress < 1) requestAnimationFrame(tick);
+    }
+
+    requestAnimationFrame(tick);
+  });
+}
+
+setTimeout(animateCountUp, 200);
+
+setTimeout(() => {
+  document.querySelectorAll('.mini-bar-fill[data-width]').forEach(bar => {
+    bar.style.width = bar.dataset.width + '%';
+  });
+}, 600);
+
+// PDF export
+async function exportPDF() {
+  const btn = document.querySelector('.btn-export');
+  const origText = btn.innerHTML;
+  btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" style="width:16px;height:16px;animation:spin 1s linear infinite"><path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182"/></svg> Generating...';
+  btn.style.pointerEvents = 'none';
+
+  try {
+    const el = document.getElementById('dashboard');
+    const canvas = await html2canvas(el, {
+      backgroundColor: '#0f1117',
+      scale: 2,
+      useCORS: true,
+      logging: false,
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const { jsPDF } = window.jspdf;
+
+    const pxW = canvas.width;
+    const pxH = canvas.height;
+    const pdfW = 297;
+    const pdfH = (pxH * pdfW) / pxW;
+
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: [pdfW, pdfH] });
+    pdf.addImage(imgData, 'PNG', 0, 0, pdfW, pdfH);
+    pdf.save('OKR-Tracker-2026-Q1.pdf');
+  } catch (err) {
+    console.error('PDF export error:', err);
+    alert('PDF export failed. Try again or use Cmd+P to print.');
+  }
+
+  btn.innerHTML = origText;
+  btn.style.pointerEvents = '';
+}
+</script>
+<style>
+@keyframes spin { to { transform: rotate(360deg); } }
+
+@keyframes fadeSlideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-in {
+  opacity: 0;
+  animation: fadeSlideUp .6s ease forwards;
+}
+
+.kpi-grid .kpi-card:nth-child(1) { animation-delay: .05s; }
+.kpi-grid .kpi-card:nth-child(2) { animation-delay: .12s; }
+.kpi-grid .kpi-card:nth-child(3) { animation-delay: .19s; }
+.kpi-grid .kpi-card:nth-child(4) { animation-delay: .26s; }
+.kpi-grid .kpi-card:nth-child(5) { animation-delay: .33s; }
+.kpi-grid .kpi-card:nth-child(6) { animation-delay: .40s; }
+
+.chart-grid .chart-card { animation-delay: .3s; }
+
+.stories-table  { animation: fadeSlideUp .6s ease .4s forwards; opacity: 0; }
+.upcoming-table { animation: fadeSlideUp .6s ease .5s forwards; opacity: 0; }
+.quarterly-table{ animation: fadeSlideUp .6s ease .55s forwards; opacity: 0; }
+.notes-card     { animation: fadeSlideUp .6s ease .6s forwards; opacity: 0; }
+</style>
+</body>
+</html>
