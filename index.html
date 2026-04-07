@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2026 Partner Content OKR Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #101010; --surface: #181818; --border: #333333; --text: #F7F7F7; --muted: #7A7A7A;
+    --accent: #7331FF; --accent-light: #956FF7;
+    --yellow: #FCD72B; --yellow-bg: rgba(252,215,43,.12);
+    --green: #17DAAC; --green-bg: rgba(23,218,172,.12);
+    --amber: #FF9E4D; --amber-bg: rgba(255,158,77,.12);
+    --red: #FF6666; --cyan: #0D6EFD; --pink: #D72BFC; --orange: #F08234; --teal: #18C69D;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: var(--bg); color: var(--text); padding: 2rem; min-height: 100vh; }
+
+  .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
+  .header h1 { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+  .header .subtitle { color: var(--muted); font-size: .875rem; margin-top: .25rem; }
+  .header .date { color: var(--muted); font-size: .75rem; margin-top: .25rem; }
+  .header-actions { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+
+  .btn { display: inline-flex; align-items: center; gap: .4rem; padding: .45rem .85rem; border-radius: .5rem; border: 1px solid var(--border); background: var(--surface); color: var(--text); font-size: .78rem; font-weight: 500; cursor: pointer; transition: all .2s; font-family: inherit; }
+  .btn:hover { border-color: var(--accent); color: var(--accent-light); }
+  .btn:active { transform: scale(.97); }
+  .btn svg { width: 15px; height: 15px; }
+
+  .badge { display: inline-flex; align-items: center; gap: .375rem; padding: .375rem .75rem; border-radius: 9999px; font-size: .75rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; }
+  .badge-at-risk { background: var(--amber-bg); color: var(--amber); }
+  .badge::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+  .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+  .kpi-card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.25rem; }
+  .kpi-card .label { font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin-bottom: .5rem; }
+  .kpi-card .value { font-size: 2rem; font-weight: 700; letter-spacing: -0.03em; line-height: 1; font-variant-numeric: tabular-nums; }
+  .kpi-card .detail { font-size: .8rem; color: var(--muted); margin-top: .375rem; }
+  .value.green { color: var(--green); } .value.amber { color: var(--amber); } .value.accent { color: var(--accent-light); }
+
+  .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+  @media (max-width: 860px) { .chart-grid { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.5rem; }
+  .chart-card h2 { font-size: .9rem; font-weight: 600; margin-bottom: 1rem; }
+  .chart-wrapper { position: relative; height: 260px; }
+
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; overflow: hidden; margin-bottom: 2rem; }
+  .card-header { display: flex; justify-content: space-between; align-items: center; padding: 1.25rem 1.5rem .75rem; flex-wrap: wrap; gap: .5rem; }
+  .card-header h2 { font-size: .9rem; font-weight: 600; }
+
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: .7rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; padding: .625rem 1.25rem; border-bottom: 1px solid var(--border); white-space: nowrap; }
+  td { padding: .65rem 1.25rem; font-size: .825rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  .region-tag { display: inline-flex; padding: .25rem .625rem; border-radius: .375rem; font-size: .72rem; font-weight: 500; white-space: nowrap; cursor: default; }
+  .region-EMEA { background: rgba(115,49,255,.12); color: var(--accent-light); }
+  .region-NA { background: rgba(23,218,172,.12); color: var(--green); }
+  .region-LATAM { background: rgba(255,158,77,.12); color: var(--amber); }
+  .region-APAC { background: rgba(13,110,253,.12); color: var(--cyan); }
+  .region-NZAus { background: rgba(215,43,252,.12); color: var(--pink); }
+  .region-Africa { background: rgba(240,130,52,.12); color: var(--orange); }
+
+  .type-tag { display: inline-flex; padding: .2rem .5rem; border-radius: .25rem; font-size: .7rem; font-weight: 500; background: rgba(255,255,255,.1); color: #b4b4bd; white-space: nowrap; }
+  .asset-tags { display: flex; flex-wrap: wrap; gap: .3rem; }
+  .asset-tag { display: inline-flex; padding: .15rem .45rem; border-radius: .25rem; font-size: .65rem; font-weight: 500; background: rgba(24,198,157,.1); color: var(--teal); white-space: nowrap; }
+  .status-tag-drafted { display: inline-flex; padding: .2rem .5rem; border-radius: .25rem; font-size: .7rem; font-weight: 500; background: var(--amber-bg); color: var(--amber); }
+  .status-tag-review { display: inline-flex; padding: .2rem .5rem; border-radius: .25rem; font-size: .7rem; font-weight: 500; background: rgba(13,110,253,.12); color: var(--cyan); }
+
+  .tier-tag { display: inline-flex; padding: .2rem .55rem; border-radius: .25rem; font-size: .65rem; font-weight: 600; white-space: nowrap; text-transform: uppercase; letter-spacing: .04em; }
+  .tier-VIP { background: linear-gradient(135deg, rgba(255,158,77,.15), rgba(240,130,52,.15)); color: #FFB679; }
+  .tier-1 { background: rgba(115,49,255,.12); color: var(--accent-light); }
+  .tier-2 { background: rgba(23,218,172,.12); color: var(--green); }
+  .tier-3 { background: rgba(13,110,253,.12); color: #3F8CFF; }
+  .tier-none { display: none; }
+
+  .blog-link { color: var(--accent-light); text-decoration: none; font-weight: 500; transition: color .15s; }
+  .blog-link:hover { color: #AB83FF; text-decoration: underline; }
+
+  .tabs { display: flex; gap: 0; margin-bottom: 2rem; border-bottom: 2px solid var(--border); }
+  .tab-btn { padding: .875rem 2rem; font-size: 1rem; font-weight: 600; color: var(--muted); background: none; border: none; border-bottom: 3px solid transparent; cursor: pointer; transition: all .2s; font-family: inherit; letter-spacing: -0.01em; margin-bottom: -2px; }
+  .tab-btn:hover { color: var(--text); background: rgba(255,255,255,.03); }
+  .tab-btn.active { color: var(--accent-light); border-bottom-color: var(--accent); background: rgba(115,49,255,.05); }
+  .tab-panel { display: none; }
+  .tab-panel.active { display: block; }
+
+  .filters-panel { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1rem 1.25rem; margin-bottom: 1rem; display: flex; flex-direction: column; gap: .6rem; }
+  .filter-row { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+  .filter-bar { display: flex; align-items: center; gap: .4rem; flex-wrap: wrap; }
+  .filter-btn { padding: .3rem .65rem; border-radius: .375rem; border: 1px solid var(--border); background: transparent; color: var(--muted); font-size: .68rem; font-weight: 500; cursor: pointer; transition: all .15s; font-family: inherit; }
+  .filter-btn:hover { border-color: var(--accent-light); color: var(--text); background: rgba(115,49,255,.08); }
+  .filter-btn.active { background: var(--accent); border-color: var(--accent); color: #F7F7F7; }
+  .filter-label { font-size: .65rem; color: var(--muted); margin-right: .25rem; text-transform: uppercase; letter-spacing: .05em; font-weight: 600; }
+
+  .repo-stats { display: flex; gap: 1.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+  .repo-stat { font-size: .8rem; color: var(--muted); }
+  .repo-stat strong { color: var(--text); font-size: 1rem; }
+
+  .notes-card { background: var(--surface); border: 1px solid var(--border); border-radius: .75rem; padding: 1.5rem; margin-bottom: 2rem; }
+  .notes-card h2 { font-size: .9rem; font-weight: 600; margin-bottom: 1rem; }
+  .forecast-line { font-size: .8rem; color: var(--muted); line-height: 1.7; }
+  .highlight { color: var(--green); font-weight: 600; }
+  .highlight-amber { color: var(--amber); font-weight: 600; }
+  .value.yellow { color: var(--yellow); }
+
+  .month-label { font-size: .7rem; color: var(--muted); white-space: nowrap; }
+  .partner-name { font-weight: 500; white-space: nowrap; }
+  .country-label { color: var(--muted); font-size: .8rem; white-space: nowrap; }
+  .bar-cell { display: flex; align-items: center; gap: .75rem; }
+  .mini-bar { flex: 1; height: 8px; background: var(--border); border-radius: 4px; overflow: hidden; }
+  .mini-bar-fill { height: 100%; border-radius: 4px; }
+  .bar-pct { font-size: .75rem; color: var(--muted); min-width: 2.5rem; text-align: right; }
+  .status-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: .5rem; }
+  .q-label { font-weight: 600; }
+
+  @media print {
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; color-adjust: exact !important; }
+    body { background: #101010 !important; color: #F7F7F7 !important; padding: 1rem !important; }
+    .btn, .filter-bar, .tabs { display: none !important; }
+    .kpi-card, .chart-card, .card, .notes-card, .filters-panel { background: #181818 !important; border-color: #333333 !important; }
+    .card-header, th, td { border-color: #333333 !important; }
+    table { background: #181818 !important; }
+    td, th, .partner-name, .q-label, h1, h2 { color: #F7F7F7 !important; }
+    .kpi-card .label, .country-label, .month-label, .bar-pct, .forecast-line, .detail { color: #7A7A7A !important; }
+    .value.green { color: #17DAAC !important; }
+    .value.amber { color: #FF9E4D !important; }
+    .value.accent { color: #956FF7 !important; }
+    .region-tag, .type-tag, .asset-tag, .tier-tag, .status-tag-drafted, .status-tag-review, .status-dot, .badge { -webkit-print-color-adjust: exact !important; }
+    .mini-bar { background: #333333 !important; }
+    .mini-bar-fill { -webkit-print-color-adjust: exact !important; }
+    .tab-panel { display: block !important; }
+    .tab-panel:not(.active) { display: none !important; }
+    .chart-card, .kpi-card, .card, .notes-card { break-inside: avoid; }
+  }
+</style>
+</head>
+<body>
+
+<div id="dashboard">
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('2026')">2026 OKR Tracker</button>
+    <button class="tab-btn" onclick="switchTab('2025')">2025 Content Repository</button>
+  </div>
+
+  <div id="tab-2026" class="tab-panel active">
+  <div class="header">
+    <div>
+      <h1>2026 Partner Content OKR Tracker</h1>
+      <div class="subtitle">Publish 52 Broker API Customer Stories, PRs, Blogs & Partner Content</div>
+      <div class="date">Last updated: April 1, 2026</div>
+    </div>
+    <div class="header-actions">
+      <span class="badge badge-at-risk">At Risk &middot; 92% of Q1 target</span>
+      <button class="btn" onclick="window.print()">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5M16.5 12L12 16.5m0 0L7.5 12m4.5 4.5V3"/></svg>
+        Export PDF
+      </button>
+    </div>
+  </div>
+
+  <div class="kpi-grid" id="kpiGrid"></div>
+
+  <div class="chart-grid">
+    <div class="chart-card"><h2>Quarterly Target vs. Actual</h2><div class="chart-wrapper"><canvas id="barChart"></canvas></div></div>
+    <div class="chart-card"><h2>Annual Progress</h2><div class="chart-wrapper"><canvas id="doughnutChart"></canvas></div></div>
+  </div>
+  <div class="chart-grid" style="margin-bottom:2rem">
+    <div class="chart-card"><h2>Cumulative Pace — Target vs. Actual</h2><div class="chart-wrapper"><canvas id="paceChart"></canvas></div></div>
+    <div class="chart-card"><h2>Stories by Region</h2><div class="chart-wrapper"><canvas id="regionChart"></canvas></div></div>
+  </div>
+  <div class="chart-grid" style="margin-bottom:2rem">
+    <div class="chart-card"><h2>Asset Classes Across Published Stories</h2><div class="chart-wrapper"><canvas id="assetBarChart"></canvas></div></div>
+    <div class="chart-card"><h2>Asset Class Mix (incl. Upcoming)</h2><div class="chart-wrapper"><canvas id="assetRadarChart"></canvas></div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-header">
+      <h2 id="storiesTitle"></h2>
+      <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end">
+        <div class="filter-bar" id="assetFilter2026"></div>
+        <div class="filter-bar" id="filter2026"></div>
+      </div>
+    </div>
+    <table><thead><tr><th>#</th><th>Partner</th><th>Type</th><th>Asset Classes</th><th>Region</th><th>Country</th><th>Published</th></tr></thead><tbody id="storiesBody"></tbody></table>
+  </div>
+
+
+  <div class="card">
+    <div class="card-header"><h2>Quarterly Breakdown</h2></div>
+    <table><thead><tr><th>Quarter</th><th>Status</th><th>Live</th><th>Drafted</th><th>Target</th><th style="width:35%">Progress</th></tr></thead><tbody id="tableBody"></tbody></table>
+  </div>
+
+  <div class="notes-card"><h2>Forecast & Key Takeaways</h2><div class="forecast-line" id="forecast"></div></div>
+  </div>
+
+  <div id="tab-2025" class="tab-panel">
+    <div class="header">
+      <div>
+        <h1>2025 Content Repository</h1>
+        <div class="subtitle">Published Broker API Customer Stories, PRs & Launch Blogs — 2025</div>
+      </div>
+    </div>
+    <div class="repo-stats" id="repoStats"></div>
+    <div class="chart-grid" style="margin-bottom:2rem">
+      <div class="chart-card"><h2>2025 Stories by Region</h2><div class="chart-wrapper"><canvas id="regionChart2025"></canvas></div></div>
+      <div class="chart-card"><h2>2025 Stories by Type</h2><div class="chart-wrapper"><canvas id="typeChart2025"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-header">
+        <h2 id="repo2025Title"></h2>
+        <div style="display:flex;flex-direction:column;gap:.4rem;align-items:flex-end">
+          <div class="filter-bar" id="assetFilter2025"></div>
+          <div class="filter-bar" id="filter2025"></div>
+        </div>
+      </div>
+      <table><thead><tr><th>#</th><th>Partner</th><th>Type</th><th>Asset Classes</th><th>Region</th><th>Country</th><th>Published</th></tr></thead><tbody id="repo2025Body"></tbody></table>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ACCENT='#7331FF',ACCENT_40='rgba(115,49,255,.4)',GREEN='#17DAAC',GREEN_40='rgba(23,218,172,.35)',AMBER='#FF9E4D',AMBER_40='rgba(255,158,77,.35)',YELLOW='#FCD72B',YELLOW_40='rgba(252,215,43,.35)',CYAN='#0D6EFD',PINK='#D72BFC',ORANGE='#F08234',TEAL='#18C69D',MUTED='#7A7A7A',BORDER='#333333';
+Chart.defaults.color=MUTED;Chart.defaults.borderColor=BORDER;Chart.defaults.font.family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+const TARGET=52;
+let charts={};
+const richTooltip={backgroundColor:'#181818',borderColor:'#333333',borderWidth:1,titleFont:{weight:'600',size:13},bodyFont:{size:12},padding:12,cornerRadius:8,displayColors:true,boxPadding:4};
+const regionClass=r=>r==='NZ/Aus'?'NZAus':r;
+const fmtDate=d=>{const dt=new Date(d+'T00:00:00');return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'});};
+const assetHtml=arr=>arr.map(a=>`<span class="asset-tag">${a}</span>`).join('');
+const tierHtml=t=>t?`<span class="tier-tag tier-${t}">Tier ${t}</span>`:'—';
+const rColors={EMEA:ACCENT,NA:GREEN,LATAM:AMBER,APAC:CYAN,'NZ/Aus':PINK,Africa:ORANGE};
+const ALL_REGIONS=['EMEA','NA','LATAM','APAC','NZ/Aus','Africa'];
+
+const stories=[
+  {partner:'TF Capital',type:'Customer Story',assets:['US Stocks & ETFs','High Yield Cash'],region:'EMEA',country:'Montenegro',date:'2026-01-08',url:'https://alpaca.markets/blog/how-tf-capital-brought-mobile-investing-in-us-markets-to-the-adriatic-region/',tier:'3'},
+  {partner:'Pearler',type:'Customer Story',assets:['US Stocks & ETFs'],region:'NZ/Aus',country:'Australia',date:'2026-01-20',url:'https://alpaca.markets/blog/how-pearler-is-building-the-investing-platform-for-the-next-generation-of-australians/',tier:'2'},
+  {partner:'Valbury (OmniSub)',type:'PR',assets:['US Stocks & ETFs','OmniSub'],region:'APAC',country:'Indonesia',date:'2026-01-21',url:'https://alpaca.markets/blog/pt-valbury-asia-futures-launches-us-stock-trading-with-alpaca-increasing-access-for-investors/',tier:'1'},
+  {partner:'Waldo AI',type:'Launch Blog',assets:['US Stocks & ETFs'],region:'NA',country:'United States',date:'2026-02-09',url:'https://alpaca.markets/blog/waldo-launches-modern-treasury-platform-for-startups-smbs-and-enterprises-through-partnership-with-alpaca/',tier:'3'},
+  {partner:'Bitso',type:'Customer Story',assets:['US Stocks & ETFs'],region:'LATAM',country:'Mexico',date:'2026-02-19',url:'https://alpaca.markets/blog/how-bitso-is-empowering-investors-in-mexico-with-commission-free-trading-of-us-stocks/',tier:'1'},
+  {partner:'Musaffa',type:'PR',assets:['US Stocks & ETFs'],region:'NA',country:'United States',date:'2026-02-26',url:'https://alpaca.markets/blog/musaffa-expands-faith-aligned-investing-with-their-global-halal-investment-platform-for-us-markets/',tier:'3'},
+  {partner:'Trii',type:'PR',assets:['US Stocks & ETFs'],region:'LATAM',country:'Chile',date:'2026-03-10',url:'https://alpaca.markets/blog/trii-launches-us-stock-trading-in-chile-expanding-global-investment-access-with-alpaca/',tier:'2'},
+  {partner:'Midas',type:'Customer Story',assets:['High Yield Cash','US Options','24/5 Trading'],region:'EMEA',country:'Turkey',date:'2026-03-17',url:'https://alpaca.markets/blog/how-midas-is-leveling-the-playing-field-for-turkish-investors/',tier:'VIP'},
+  {partner:'Vesto',type:'Customer Story',assets:['US Stocks & ETFs','Fixed Income','High Yield Cash'],region:'EMEA',country:'Spain',date:'2026-03-19',url:'https://alpaca.markets/blog/how-vesto-is-expanding-financial-access-in-spain-and-andorra-with-alpaca/',tier:'3'},
+  {partner:'Wallace',type:'Launch Blog',assets:['US Stocks & ETFs'],region:'NA',country:'United States',date:'2026-03-24',url:'https://alpaca.markets/blog/wallace-finance-partners-with-alpaca-to-launch-direct-indexing-and-custom-etfs-platform-for-retail-investors/',tier:'3'},
+  {partner:'Artesia / CUSP',type:'Launch Blog',assets:['US Stocks & ETFs','High Yield Cash'],region:'EMEA',country:'GCC',date:'2026-03-26',url:'https://alpaca.markets/blog/cusp-wealth-launches-us-stocks-and-savings-accounts-redefining-wealthtech-across-the-gcc/',tier:'3'},
+  {partner:'Raenest',type:'Customer Story',assets:['US Stocks & ETFs','High Yield Cash'],region:'Africa',country:'Nigeria',date:'2026-03-31',url:'https://alpaca.markets/blog/how-raenest-is-empowering-nigerian-professionals-with-access-to-us-markets/',tier:'3'},
+];
+
+const upcoming=[
+  {partner:'Ondo',type:'Customer Story',assets:['Tokenization'],status:'Internal Review',region:'NA',country:'United States'},
+  {partner:'Pasha Capital',type:'Customer Story',assets:['US Stocks & ETFs'],status:'External Review',region:'APAC',country:'Azerbaijan'},
+  {partner:'Zesty',type:'PR',assets:['Crypto'],status:'External Review',region:'LATAM',country:'Chile'},
+  {partner:'St0x',type:'PR',assets:['Tokenization','Crypto Wallets'],status:'Blocked by Partner',region:'EMEA',country:'United Kingdom'},
+  {partner:'Anchored',type:'PR',assets:['Tokenization'],status:'Blocked by Partner',region:'APAC',country:'Hong Kong'},
+  {partner:'Rudo',type:'Launch Blog',assets:['US Stocks & ETFs','High Yield Cash'],status:'Blocked by Partner',region:'EMEA',country:'Dubai'},
+];
+
+const stories2025=[
+  {partner:'Dime!',type:'Customer Story',region:'APAC',country:'Thailand',date:'2025-03-10',url:'https://alpaca.markets/blog/dime-revolutionizing-investing-in-thailand-with-alpaca/',tier:'VIP',assets:['US Stocks & ETFs','US Options']},
+  {partner:'Kraken',type:'PR',region:'NA',country:'United States',date:'2025-04-28',url:'https://alpaca.markets/blog/kraken-offers-us-securities-through-strategic-partnership-with-alpaca/',tier:'VIP',assets:['US Stocks & ETFs']},
+  {partner:'Kernel',type:'Customer Story',region:'NZ/Aus',country:'New Zealand',date:'2025-06-03',url:'https://alpaca.markets/blog/how-kernel-is-encouraging-long-term-investment-and-wealth-in-new-zealand-with-alpaca/',tier:'3',assets:['US Stocks & ETFs']},
+  {partner:'Investlink',type:'Customer Story',region:'APAC',country:'Kazakhstan',date:'2025-06-10',url:'https://alpaca.markets/blog/how-investlink-is-redefining-investing-in-central-asia-with-product-diversity-and-alpaca/',tier:'2',assets:['US Stocks & ETFs']},
+  {partner:'Backed',type:'Customer Story',region:'EMEA',country:'Switzerland',date:'2025-06-18',url:'https://alpaca.markets/blog/bridging-tradfi-and-defi-with-backeds-tokenized-xstocks-solution-powered-by-alpaca/',tier:'1',assets:['Tokenization']},
+  {partner:'Quantl',type:'Customer Story',region:'EMEA',country:'GCC',date:'2025-07-02',url:'https://alpaca.markets/blog/empowering-investors-in-the-middle-east-how-quantl-is-transforming-access-to-us-markets/',tier:'3',assets:['US Stocks & ETFs']},
+  {partner:'ZAD',type:'Customer Story',region:'EMEA',country:'GCC',date:'2025-07-14',url:'https://alpaca.markets/blog/meeting-the-needs-of-the-gcc-how-zad-and-alpaca-are-collaborating-to-deliver-shariah-compliant-investment-solutions/',tier:'1',assets:['US Stocks & ETFs']},
+  {partner:'Manzil',type:'PR',region:'NA',country:'United States',date:'2025-07-15',url:'https://alpaca.markets/blog/manzil-expands-shariah-compliant-investment-solutions-to-american-muslims-with-alpaca/',tier:'3',assets:['US Stocks & ETFs']},
+  {partner:'Composer',type:'Customer Story',region:'NA',country:'United States',date:'2025-07-24',url:'https://alpaca.markets/blog/how-composer-is-redefining-algorithmic-trading-with-their-no-code-platform/',tier:'1',assets:['US Stocks & ETFs','Crypto','US Options']},
+  {partner:'Moola',type:'Customer Story',region:'NA',country:'United States',date:'2025-08-07',url:'https://alpaca.markets/blog/how-moola-aims-to-make-finance-more-accessible-for-everyday-americans-with-alpaca/',tier:'3',assets:['US Stocks & ETFs','High Yield Cash']},
+  {partner:'Ondo',type:'PR',region:'NA',country:'United States',date:'2025-09-03',url:'https://alpaca.markets/blog/ondo-finance-and-alpaca-collaborate-to-tokenize-us-stocks-and-etfs/',tier:'1',assets:['Tokenization','US Stocks & ETFs']},
+  {partner:'Global Menkul',type:'Launch Blog',region:'EMEA',country:'Turkey',date:'2025-10-09',url:'https://alpaca.markets/blog/global-menkul-degerler-partners-with-alpaca-to-expand-access-to-us-equities-for-turkish-investors/',tier:'3',assets:['US Stocks & ETFs']},
+  {partner:'Abyan Capital',type:'PR',region:'EMEA',country:'GCC',date:'2025-10-20',url:'https://alpaca.markets/blog/abyan-capital-launches-shariah-compliant-self-directed-access-to-us-markets-with-alpaca/',tier:'1',assets:['US Stocks & ETFs']},
+  {partner:'Sav Money',type:'Launch Blog',region:'EMEA',country:'GCC',date:'2025-10-22',url:'https://alpaca.markets/blog/sav-launches-us-stocks-etfs-and-high-yield-savings-accounts-in-gcc-through-partnership-with-alpaca/',tier:'3',assets:['US Stocks & ETFs','High Yield Cash']},
+  {partner:'Gotrade',type:'PR',region:'APAC',country:'Indonesia/Malaysia',date:'2025-10-26',url:'https://alpaca.markets/blog/gotrade-launches-us-options-trading-in-southeast-asia-with-alpaca/',tier:'1',assets:['US Options']},
+  {partner:'SBI Securities',type:'PR',region:'APAC',country:'Japan',date:'2025-11-24',url:'https://alpaca.markets/blog/alpaca-launches-us-stock-execution-service-for-sbi-securities-japans-largest-online-brokerage/',tier:'1',assets:['US Stocks & ETFs']},
+  {partner:'Eko',type:'Customer Story',region:'NA',country:'United States',date:'2025-12-03',url:'https://alpaca.markets/blog/how-eko-is-bringing-digital-investing-to-us-banks-and-credit-unions/',tier:'3',assets:['US Stocks & ETFs']},
+  {partner:'GoTyme Bank',type:'PR',region:'APAC',country:'Philippines',date:'2025-12-07',url:'https://alpaca.markets/blog/gotyme-bank-launches-crypto-trading-in-the-philippines-in-partnership-with-alpaca/',tier:'1',assets:['Crypto']},
+  {partner:'Kraken (xStocks)',type:'PR',region:'NA',country:'United States',date:'2025-12-17',url:'https://alpaca.markets/blog/a-new-chapter-for-xstocks-kraken-partners-with-alpaca-to-power-global-tokenization-acceleration/',tier:'VIP',assets:['Tokenization']},
+];
+
+// Filter state
+let filter2026 = null;
+let filter2025 = null;
+let tierFilter2026 = null;
+let tierFilter2025 = null;
+let assetFilter2026 = null;
+let assetFilter2025 = null;
+const ALL_TIERS = ['VIP','1','2','3'];
+const ALL_ASSETS = ['US Stocks & ETFs','High Yield Cash','Tokenization','US Options','Crypto','Fixed Income','24/5 Trading','OmniSub','Crypto Wallets'];
+
+function buildFilterBar(containerId, filterKey, onFilter) {
+  const el = document.getElementById(containerId);
+  let html = '<span class="filter-label">Region:</span>';
+  html += `<button class="filter-btn ${filterKey === null ? 'active' : ''}" onclick="${onFilter}(null)">All</button>`;
+  ALL_REGIONS.forEach(r => {
+    html += `<button class="filter-btn ${filterKey === r ? 'active' : ''}" onclick="${onFilter}('${r}')">${r}</button>`;
+  });
+  el.innerHTML = html;
+}
+
+function buildTierFilterBar(containerId, filterKey, onFilter) {
+  const el = document.getElementById(containerId);
+  let html = '<span class="filter-label">Tier:</span>';
+  html += `<button class="filter-btn ${filterKey === null ? 'active' : ''}" onclick="${onFilter}(null)">All</button>`;
+  ALL_TIERS.forEach(t => {
+    const label = t === 'VIP' ? 'VIP' : 'Tier ' + t;
+    html += `<button class="filter-btn ${filterKey === t ? 'active' : ''}" onclick="${onFilter}('${t}')">${label}</button>`;
+  });
+  el.innerHTML = html;
+}
+
+function buildAssetFilterBar(containerId, filterKey, onFilter) {
+  const el = document.getElementById(containerId);
+  let html = '<span class="filter-label">Asset:</span>';
+  html += `<button class="filter-btn ${filterKey === null ? 'active' : ''}" onclick="${onFilter}(null)">All</button>`;
+  ALL_ASSETS.forEach(a => {
+    html += `<button class="filter-btn ${filterKey === a ? 'active' : ''}" onclick="${onFilter}('${a}')">${a}</button>`;
+  });
+  el.innerHTML = html;
+}
+
+function setFilter2026(region) {
+  filter2026 = region;
+  renderStories2026();
+}
+
+function setTierFilter2026(tier) {
+  tierFilter2026 = tier;
+  renderStories2026();
+}
+
+function setAssetFilter2026(asset) {
+  assetFilter2026 = asset;
+  renderStories2026();
+}
+
+function setFilter2025(region) {
+  filter2025 = region;
+  renderStories2025Table();
+}
+
+function setTierFilter2025(tier) {
+  tierFilter2025 = tier;
+  renderStories2025Table();
+}
+
+function setAssetFilter2025(asset) {
+  assetFilter2025 = asset;
+  renderStories2025Table();
+}
+
+function renderStories2026() {
+  let filtered = stories;
+  if (filter2026) filtered = filtered.filter(s => s.region === filter2026);
+  if (assetFilter2026) filtered = filtered.filter(s => s.assets && s.assets.includes(assetFilter2026));
+
+  const labels = [filter2026, assetFilter2026].filter(Boolean);
+  document.getElementById('storiesTitle').textContent = labels.length
+    ? `Published Stories — ${labels.join(' / ')} (${filtered.length})`
+    : `Q1 Published Stories (${stories.length})`;
+
+  buildFilterBar('filter2026', filter2026, 'setFilter2026');
+  buildAssetFilterBar('assetFilter2026', assetFilter2026, 'setAssetFilter2026');
+
+  let html = '';
+  filtered.forEach((x, i) => {
+    const link = x.url ? `<a class="blog-link" href="${x.url}" target="_blank">${x.partner}</a>` : `<span class="partner-name">${x.partner}</span>`;
+    html += `<tr>
+      <td style="color:var(--muted)">${i+1}</td>
+      <td>${link}</td>
+      <td><span class="type-tag">${x.type}</span></td>
+      <td><div class="asset-tags">${assetHtml(x.assets)}</div></td>
+      <td><span class="region-tag region-${regionClass(x.region)}">${x.region}</span></td>
+      <td class="country-label">${x.country}</td>
+      <td class="month-label">${fmtDate(x.date)}</td>
+    </tr>`;
+  });
+  document.getElementById('storiesBody').innerHTML = html;
+}
+
+function render() {
+  const s = stories;
+  const nLive=s.length;
+  const remaining=TARGET-nLive;
+  const pct=Math.round(nLive/TARGET*100);
+  const runRate=((TARGET-nLive)/9).toFixed(1);
+  const regions=[...new Set(s.map(x=>x.region).filter(Boolean))];
+
+  document.getElementById('kpiGrid').innerHTML=`
+    <div class="kpi-card"><div class="label">Published / Live</div><div class="value green">${nLive}</div><div class="detail">of ${TARGET} target</div></div>
+    <div class="kpi-card"><div class="label">Remaining</div><div class="value">${remaining>0?remaining:0}</div><div class="detail">stories to publish</div></div>
+    <div class="kpi-card"><div class="label">Overall Progress</div><div class="value accent">${pct}%</div><div class="detail">25% expected at Q1 end</div></div>
+    <div class="kpi-card"><div class="label">Regions Covered</div><div class="value accent">${regions.length}</div><div class="detail">global regions</div></div>
+    <div class="kpi-card"><div class="label">Run Rate Needed</div><div class="value">${runRate}</div><div class="detail">stories/month (Apr–Dec)</div></div>`;
+
+  renderStories2026();
+
+  const nPipeline=0;
+  const quarters=[{label:'Q1',target:13,live:nLive,drafted:0,status:nLive>=13?'on-track':'at-risk'},{label:'Q2',target:13,live:0,drafted:0,status:'pending'},{label:'Q3',target:13,live:0,drafted:0,status:'pending'},{label:'Q4',target:13,live:0,drafted:0,status:'pending'}];
+  let qHtml='';
+  quarters.forEach(q=>{const p=Math.round(q.live/q.target*100);const color=q.live===0?MUTED:p>=90?GREEN:p>=50?AMBER:'#ef4444';const sl=q.status==='at-risk'?'Near Target':q.status==='pending'?'Upcoming':'On Track';const dc=q.status==='at-risk'?AMBER:q.status==='pending'?MUTED:GREEN;qHtml+=`<tr><td class="q-label">${q.label} 2026</td><td><span class="status-dot" style="background:${dc}"></span>${sl}</td><td>${q.live}</td><td>${q.drafted}</td><td>${q.target}</td><td><div class="bar-cell"><div class="mini-bar"><div class="mini-bar-fill" style="width:${p}%;background:${color}"></div></div><span class="bar-pct">${p}%</span></div></td></tr>`;});
+  document.getElementById('tableBody').innerHTML=qHtml;
+
+  document.getElementById('forecast').innerHTML=`Q1 closed with <span class="highlight">${nLive} stories live</span> against a target of 13.<br><br>To hit ${TARGET} by year-end, we need <span class="highlight-amber">~${runRate} stories/month</span> (Apr–Dec) — roughly <span class="highlight-amber">1 per week</span>.<br><br>Regional coverage is strong: <span class="highlight">${regions.length} regions</span> represented in Q1 alone.`;
+
+  Object.values(charts).forEach(c=>c.destroy());charts={};
+  const partnersByRegion={};s.forEach(x=>{if(x.region)(partnersByRegion[x.region]=partnersByRegion[x.region]||[]).push(x.partner);});
+  const partnersByAsset={};s.forEach(x=>x.assets.forEach(a=>{(partnersByAsset[a]=partnersByAsset[a]||[]).push(x.partner);}));
+
+  charts.bar=new Chart(document.getElementById('barChart'),{type:'bar',data:{labels:quarters.map(q=>q.label),datasets:[{label:'Target',data:quarters.map(q=>q.target),backgroundColor:ACCENT_40,borderColor:ACCENT,borderWidth:1,borderRadius:6},{label:'Live',data:quarters.map(q=>q.live),backgroundColor:GREEN_40,borderColor:GREEN,borderWidth:1,borderRadius:6},{label:'Drafted',data:quarters.map(q=>q.drafted),backgroundColor:AMBER_40,borderColor:AMBER,borderWidth:1,borderRadius:6}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:16}},tooltip:{...richTooltip}},scales:{y:{beginAtZero:true,grid:{color:BORDER},ticks:{stepSize:5}},x:{grid:{display:false}}}}});
+
+  charts.doughnut=new Chart(document.getElementById('doughnutChart'),{type:'doughnut',data:{labels:['Published','Pipeline','Remaining'],datasets:[{data:[nLive,nPipeline,remaining>0?remaining:0],backgroundColor:[GREEN,AMBER,BORDER],borderWidth:0,spacing:3,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'72%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:16}},tooltip:{...richTooltip,callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} (${Math.round(ctx.raw/TARGET*100)}%)`}}}},plugins:[{id:'ct',afterDraw(c){const{ctx,chartArea:{width,height,top,left}}=c;const cx=left+width/2,cy=top+height/2-12;ctx.save();ctx.textAlign='center';ctx.fillStyle='#F7F7F7';ctx.font='bold 2rem -apple-system,sans-serif';ctx.fillText(pct+'%',cx,cy+8);ctx.font='.75rem -apple-system,sans-serif';ctx.fillStyle=MUTED;ctx.fillText(nLive+' of '+TARGET+' stories',cx,cy+28);ctx.restore();}}]});
+
+  const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const tp=months.map((_,i)=>Math.round(TARGET/12*(i+1)*10)/10);
+  const ap=[3,6,nLive,null,null,null,null,null,null,null,null,null];
+  const pp=[null,null,nLive];for(let i=3;i<12;i++)pp.push(Math.round((nLive+nPipeline+(TARGET-nLive-nPipeline)/9*(i-2))*10)/10);
+  charts.pace=new Chart(document.getElementById('paceChart'),{type:'line',data:{labels:months,datasets:[{label:'Target Pace',data:tp,borderColor:ACCENT,borderDash:[6,4],borderWidth:2,pointRadius:0,tension:.3},{label:'Actual',data:ap,borderColor:GREEN,borderWidth:2.5,pointRadius:5,pointBackgroundColor:GREEN,tension:.3},{label:'Projected (incl. pipeline)',data:pp,borderColor:AMBER,borderDash:[4,4],borderWidth:2,pointRadius:0,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:16}},tooltip:{...richTooltip}},scales:{y:{beginAtZero:true,max:55,grid:{color:BORDER}},x:{grid:{display:false}}}}});
+
+  const regionCounts={};s.forEach(x=>{if(x.region)regionCounts[x.region]=(regionCounts[x.region]||0)+1;});
+  const rc=ALL_REGIONS.filter(r=>regionCounts[r]);
+  charts.region=new Chart(document.getElementById('regionChart'),{type:'bar',data:{labels:rc,datasets:[{data:rc.map(r=>regionCounts[r]||0),backgroundColor:rc.map(r=>(rColors[r]||MUTED)+'55'),borderColor:rc.map(r=>rColors[r]||MUTED),borderWidth:1,borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...richTooltip,callbacks:{label:ctx=>` ${ctx.raw} ${ctx.raw===1?'story':'stories'}`,afterLabel(ctx){const p=partnersByRegion[rc[ctx.dataIndex]];return p?p.join(', '):'';}}}},scales:{x:{beginAtZero:true,grid:{color:BORDER},ticks:{stepSize:1}},y:{grid:{display:false}}}}});
+
+  const assetCounts={};s.forEach(x=>x.assets.forEach(a=>{assetCounts[a]=(assetCounts[a]||0)+1;}));
+  const aLabels=Object.keys(assetCounts).sort((a,b)=>assetCounts[b]-assetCounts[a]);
+  const aC=[GREEN,TEAL,AMBER,ACCENT,CYAN,PINK,ORANGE];
+  charts.asset=new Chart(document.getElementById('assetBarChart'),{type:'bar',data:{labels:aLabels,datasets:[{data:aLabels.map(a=>assetCounts[a]),backgroundColor:aLabels.map((_,i)=>aC[i%aC.length]+'55'),borderColor:aLabels.map((_,i)=>aC[i%aC.length]),borderWidth:1,borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...richTooltip,callbacks:{label:ctx=>` ${ctx.raw} ${ctx.raw===1?'story':'stories'}`,afterLabel(ctx){const p=partnersByAsset[aLabels[ctx.dataIndex]];return p?p.join(', '):'';}}}},scales:{x:{beginAtZero:true,grid:{color:BORDER},ticks:{stepSize:2}},y:{grid:{display:false}}}}});
+
+  const allAC={};s.forEach(x=>x.assets.forEach(a=>{allAC[a]=(allAC[a]||0)+1;}));u.forEach(x=>x.assets.forEach(a=>{allAC[a]=(allAC[a]||0)+1;}));
+  const upAC={};u.forEach(x=>x.assets.forEach(a=>{upAC[a]=(upAC[a]||0)+1;}));
+  const rL=Object.keys(allAC).sort((a,b)=>allAC[b]-allAC[a]);
+  charts.radar=new Chart(document.getElementById('assetRadarChart'),{type:'radar',data:{labels:rL,datasets:[{label:`Published (${nLive})`,data:rL.map(a=>assetCounts[a]||0),backgroundColor:GREEN+'20',borderColor:GREEN,borderWidth:2,pointBackgroundColor:GREEN,pointRadius:4},{label:`Upcoming (${nPipeline})`,data:rL.map(a=>upAC[a]||0),backgroundColor:AMBER+'20',borderColor:AMBER,borderWidth:2,pointBackgroundColor:AMBER,pointRadius:4}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:16}},tooltip:{...richTooltip}},scales:{r:{beginAtZero:true,grid:{color:BORDER},angleLines:{color:BORDER},pointLabels:{color:MUTED,font:{size:10}},ticks:{display:false}}}}});
+}
+
+render();
+
+// 2025 tab
+let charts2025={};
+
+function renderStories2025Table() {
+  let filtered=stories2025;
+  if(filter2025) filtered=filtered.filter(s=>s.region===filter2025);
+  if(assetFilter2025) filtered=filtered.filter(s=>s.assets&&s.assets.includes(assetFilter2025));
+
+  buildFilterBar('filter2025',filter2025,'setFilter2025');
+  buildAssetFilterBar('assetFilter2025',assetFilter2025,'setAssetFilter2025');
+
+  const labels=[filter2025,assetFilter2025].filter(Boolean);
+  document.getElementById('repo2025Title').textContent=labels.length
+    ?`2025 Stories — ${labels.join(' / ')} (${filtered.length})`
+    :`2025 Published Stories (${stories2025.length})`;
+
+  let html='';
+  filtered.forEach((s,i)=>{
+    const link=s.url?`<a class="blog-link" href="${s.url}" target="_blank">${s.partner}</a>`:`<span class="partner-name">${s.partner}</span>`;
+    html+=`<tr><td style="color:var(--muted)">${i+1}</td><td>${link}</td><td><span class="type-tag">${s.type}</span></td><td><div class="asset-tags">${assetHtml(s.assets||[])}</div></td><td><span class="region-tag region-${regionClass(s.region)}">${s.region}</span></td><td class="country-label">${s.country}</td><td class="month-label">${fmtDate(s.date)}</td></tr>`;
+  });
+  document.getElementById('repo2025Body').innerHTML=html;
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.tab-panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+tab).classList.add('active');
+  document.querySelector(`.tab-btn[onclick="switchTab('${tab}')"]`).classList.add('active');
+  if(tab==='2025')render2025();
+}
+
+function render2025() {
+  Object.values(charts2025).forEach(c=>c.destroy());charts2025={};
+  const n=stories2025.length;
+  const regionCounts={},typeCounts={};
+  stories2025.forEach(s=>{regionCounts[s.region]=(regionCounts[s.region]||0)+1;typeCounts[s.type]=(typeCounts[s.type]||0)+1;});
+  const regions=[...new Set(stories2025.map(s=>s.region))];
+
+  document.getElementById('repoStats').innerHTML=`
+    <div class="repo-stat"><strong>${n}</strong> stories published</div>
+    <div class="repo-stat"><strong>${regions.length}</strong> regions</div>
+    <div class="repo-stat"><strong>${typeCounts['Customer Story']||0}</strong> customer stories</div>
+    <div class="repo-stat"><strong>${typeCounts['PR']||0}</strong> PRs</div>
+    <div class="repo-stat"><strong>${typeCounts['Launch Blog']||0}</strong> launch blogs</div>`;
+
+  renderStories2025Table();
+
+  const pByRegion2025={};
+  stories2025.forEach(s=>{(pByRegion2025[s.region]=pByRegion2025[s.region]||[]).push(s.partner);});
+  const pByType2025={};
+  stories2025.forEach(s=>{(pByType2025[s.type]=pByType2025[s.type]||[]).push(s.partner);});
+
+  const rUsed=ALL_REGIONS.filter(r=>regionCounts[r]);
+  charts2025.region=new Chart(document.getElementById('regionChart2025'),{type:'bar',data:{labels:rUsed,datasets:[{data:rUsed.map(r=>regionCounts[r]||0),backgroundColor:rUsed.map(r=>(rColors[r]||MUTED)+'55'),borderColor:rUsed.map(r=>rColors[r]||MUTED),borderWidth:1,borderRadius:6}]},options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...richTooltip,callbacks:{label:ctx=>` ${ctx.raw} ${ctx.raw===1?'story':'stories'}`,afterLabel(ctx){const p=pByRegion2025[rUsed[ctx.dataIndex]];return p?p.join(', '):'';}}}},scales:{x:{beginAtZero:true,grid:{color:BORDER},ticks:{stepSize:1}},y:{grid:{display:false}}}}});
+
+  const tLabels=Object.keys(typeCounts).sort((a,b)=>typeCounts[b]-typeCounts[a]);
+  const tColors=[GREEN,AMBER,CYAN];
+  charts2025.type=new Chart(document.getElementById('typeChart2025'),{type:'doughnut',data:{labels:tLabels,datasets:[{data:tLabels.map(t=>typeCounts[t]),backgroundColor:tColors.slice(0,tLabels.length),borderWidth:0,spacing:3,borderRadius:4}]},options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'bottom',labels:{boxWidth:12,padding:16}},tooltip:{...richTooltip,callbacks:{label:ctx=>` ${ctx.label}: ${ctx.raw} ${ctx.raw===1?'story':'stories'}`,afterLabel(ctx){const p=pByType2025[tLabels[ctx.dataIndex]];return p?p.join(', '):'';}}}}},plugins:[{id:'ct2025',afterDraw(c){const{ctx,chartArea:{width,height,top,left}}=c;const cx=left+width/2,cy=top+height/2-8;ctx.save();ctx.textAlign='center';ctx.fillStyle='#F7F7F7';ctx.font='bold 1.75rem -apple-system,sans-serif';ctx.fillText(n,cx,cy+6);ctx.font='.7rem -apple-system,sans-serif';ctx.fillStyle=MUTED;ctx.fillText('total stories',cx,cy+24);ctx.restore();}}]});
+}
+</script>
+</body>
+</html>
